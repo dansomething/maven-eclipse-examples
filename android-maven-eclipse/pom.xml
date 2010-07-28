@@ -130,8 +130,10 @@
 									<includes>
 										<include>target/*.apk</include>
 									</includes>
-									<keystore>${project.build.directory}/../cert/android-release-key.keystore</keystore>
-									<storepass>${android.storepass}</storepass>
+									<keystore>${basedir}/cert/android-release-key.keystore</keystore>
+                                    <!-- from settings.xml -->
+                                    <storepass>${android.storepass}</storepass>
+                                    <!-- from settings.xml -->
 									<keypass>${android.keypass}</keypass>
 									<alias>android-release</alias>
 								</configuration>
