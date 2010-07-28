@@ -1,4 +1,4 @@
-package com.planettelex.examples;
+package net.planettelex.examples;
 
 import android.app.Activity;
 import android.os.Bundle;
