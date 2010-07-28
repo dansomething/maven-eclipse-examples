@@ -1,0 +1,175 @@
+<project
+	xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+    <groupId>net.planettelex.maven</groupId>
+	<artifactId>android-maven-eclipse</artifactId>
+	<version>1.0-SNAPSHOT</version>
+	<packaging>apk</packaging>
+
+	<properties>
+		<project.version.code>1</project.version.code>
+        <android.version>1.5_r4</android.version>
+		<java.version>1.6</java.version>
+        <gmaven.version>1.2</gmaven.version>
+        <mavenandroid.version>2.5.1</mavenandroid.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.google.android</groupId>
+			<artifactId>android</artifactId>
+            <version>${android.version}</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<defaultGoal>package</defaultGoal>
+
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.1</version>
+				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
+				<artifactId>maven-android-plugin</artifactId>
+                <version>${mavenandroid.version}</version>
+				<configuration>
+					<deleteConflictingFiles>true</deleteConflictingFiles>
+					<undeployBeforeDeploy>true</undeployBeforeDeploy>
+					<sdk>
+						<path>${env.ANDROID_HOME}</path>
+						<platform>3</platform>
+					</sdk>
+				</configuration>
+				<extensions>true</extensions>
+				<executions>
+					<execution>
+						<id>alignApk</id>
+						<phase>install</phase>
+						<goals>
+							<goal>zipalign</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<!--
+					Sets the AndroidManifest.xml 'Version Name' to the project's version number.
+				-->
+				<groupId>org.codehaus.gmaven</groupId>
+				<artifactId>gmaven-plugin</artifactId>
+                <version>${gmaven.version}</version>
+				<executions>
+					<execution>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>execute</goal>
+						</goals>
+						<configuration>
+							<source>
+								try {
+									def manifestFile = new File("AndroidManifest.xml")
+									def ns = new groovy.xml.Namespace("http://schemas.android.com/apk/res/android", "ns")
+									def parser = new groovy.util.XmlParser(false, true)
+									def rootNode = parser.parse(manifestFile)
+									def attributes = rootNode.attributes()
+									attributes[ns.versionName] = "${project.version}"
+									attributes[ns.versionCode] = "${project.version.code}"
+									def writer = new groovy.io.GroovyPrintWriter(manifestFile)
+									writer.println('&lt;?xml version="1.0" encoding="UTF-8"?&gt;')
+									def xmlWriter = new groovy.util.XmlNodePrinter(writer)
+									xmlWriter.setPreserveWhitespace(false)
+									xmlWriter.setNamespaceAware(true)
+									xmlWriter.print(rootNode)
+								}
+								catch (IOException e)
+								{
+									println('No AndroidManifest.xml file found. Skipping version update.')
+									println('Probably not an Android project, but a library.')
+									println('Skipping version update.')
+								}
+                            </source>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>sign</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-jarsigner-plugin</artifactId>
+						<version>1.2</version>
+						<executions>
+							<execution>
+								<id>signing</id>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+								<phase>package</phase>
+								<inherited>true</inherited>
+								<configuration>
+									<archiveDirectory></archiveDirectory>
+									<includes>
+										<include>target/*.apk</include>
+									</includes>
+									<keystore>${project.build.directory}/../cert/android-release-key.keystore</keystore>
+									<storepass>${android.storepass}</storepass>
+									<keypass>${android.keypass}</keypass>
+									<alias>android-release</alias>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>com.jayway.maven.plugins.android.generation2</groupId>
+						<artifactId>maven-android-plugin</artifactId>
+						<inherited>true</inherited>
+						<configuration>
+							<sign>
+								<debug>false</debug>
+							</sign>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	
+		<profile>
+			<id>install</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.jayway.maven.plugins.android.generation2</groupId>
+						<artifactId>maven-android-plugin</artifactId>
+						<executions>
+							<execution>
+								<phase>install</phase>
+								<goals>
+									<goal>deploy</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>
